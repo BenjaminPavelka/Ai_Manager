@@ -306,6 +306,16 @@ def unload_model(name: str):
             )
             with urllib.request.urlopen(req, timeout=30) as resp:
                 resp.read()
+            # Wait until Ollama confirms the model is gone from /api/ps
+            for _ in range(20):
+                time.sleep(0.5)
+                try:
+                    with urllib.request.urlopen("http://localhost:11434/api/ps", timeout=3) as r:
+                        ps = json.loads(r.read())
+                    if name not in [m["name"] for m in ps.get("models", [])]:
+                        break
+                except Exception:
+                    break
             _model_ops[name] = {"status": "done", "action": "unload"}
         except Exception as exc:
             _model_ops[name] = {"status": "error", "action": "unload", "error": str(exc)}
