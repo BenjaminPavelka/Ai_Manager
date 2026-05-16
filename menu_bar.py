@@ -9,6 +9,7 @@ import webbrowser
 import rumps
 
 from services_config import SERVICES, APPS, PORT
+from version import VERSION
 
 # How often (seconds) the menu refreshes service statuses
 REFRESH_INTERVAL = 8
@@ -77,7 +78,8 @@ class AIManagerMenuBar(rumps.App):
             self._app_menu_items[aid] = item
             app_items.append(item)
 
-        quit_item = rumps.MenuItem("Ukončit", callback=lambda _: rumps.quit_application())
+        about_item = rumps.MenuItem(f"AI Manager  v{VERSION}", callback=None)
+        quit_item  = rumps.MenuItem("Ukončit", callback=lambda _: rumps.quit_application())
 
         self.menu = [
             open_dashboard,
@@ -88,6 +90,7 @@ class AIManagerMenuBar(rumps.App):
             None,
             *app_items,
             None,
+            about_item,
             quit_item,
         ]
 
