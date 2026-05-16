@@ -9,3 +9,4 @@ dist/
 venv/
 ~/ai-manager-venv/
 model_notes.json
+.claude/worktrees/stoic-hamilton-d1a102/
