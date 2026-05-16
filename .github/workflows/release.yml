@@ -9,6 +9,8 @@ jobs:
   build:
     name: Build macOS .app
     runs-on: macos-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout
@@ -30,8 +32,7 @@ jobs:
 
       - name: Zip the .app
         run: |
-          cd dist
-          zip -r "../AI.Manager.zip" "AI Manager.app"
+          ditto -c -k --sequesterRsrc --keepParent "dist/AI Manager.app" "AI.Manager.zip"
 
       - name: Get version from tag
         id: version
@@ -40,6 +41,7 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          token: ${{ secrets.GITHUB_TOKEN }}
           name: "AI Manager ${{ steps.version.outputs.VERSION }}"
           body: |
             ## Stažení
