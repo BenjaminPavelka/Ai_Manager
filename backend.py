@@ -275,14 +275,14 @@ def load_model(name: str):
     def worker():
         try:
             import urllib.request
-            payload = json.dumps({"model": name, "keep_alive": -1}).encode()
+            payload = json.dumps({"model": name, "keep_alive": -1, "prompt": ""}).encode()
             req = urllib.request.Request(
                 "http://localhost:11434/api/generate",
                 data=payload, method="POST",
                 headers={"Content-Type": "application/json"},
             )
-            with urllib.request.urlopen(req, timeout=120):
-                pass
+            with urllib.request.urlopen(req, timeout=120) as resp:
+                resp.read()
             _model_ops[name] = {"status": "done", "action": "load"}
         except Exception as exc:
             _model_ops[name] = {"status": "error", "action": "load", "error": str(exc)}
@@ -298,14 +298,14 @@ def unload_model(name: str):
     def worker():
         try:
             import urllib.request
-            payload = json.dumps({"model": name, "keep_alive": 0}).encode()
+            payload = json.dumps({"model": name, "keep_alive": 0, "prompt": ""}).encode()
             req = urllib.request.Request(
                 "http://localhost:11434/api/generate",
                 data=payload, method="POST",
                 headers={"Content-Type": "application/json"},
             )
-            with urllib.request.urlopen(req, timeout=30):
-                pass
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                resp.read()
             _model_ops[name] = {"status": "done", "action": "unload"}
         except Exception as exc:
             _model_ops[name] = {"status": "error", "action": "unload", "error": str(exc)}
