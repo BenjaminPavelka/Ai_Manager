@@ -40,6 +40,7 @@ def open_dashboard():
         NSMakeRect(0, 0, 1100, 740), style, NSBackingStoreBuffered, False
     )
     win.setTitle_("AI Manager")
+    win.setReleasedWhenClosed_(False)  # prevent crash when Python still holds a reference
     win.center()
     win.setCollectionBehavior_(NSWindowCollectionBehaviorFullScreenPrimary)
 
