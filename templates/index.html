@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="cs">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -196,7 +196,6 @@
     .model-meta { font-size: .74rem; color: var(--muted); margin-top: .1rem; }
     .model-actions { display: flex; align-items: center; gap: .5rem; flex-shrink: 0; }
 
-    /* Větší load/unload tlačítka */
     .btn-toggle {
       display: inline-flex;
       align-items: center;
@@ -254,7 +253,6 @@
       white-space: nowrap;
     }
 
-    /* Popis modelu */
     .model-note {
       font-size: .75rem;
       color: var(--muted);
@@ -382,32 +380,32 @@
 <div class="main">
 
   <!-- Services -->
-  <div class="section-label"><i class="bi bi-server"></i> Služby</div>
+  <div class="section-label"><i class="bi bi-server"></i> Services</div>
   <div class="row g-3 mb-4" id="services-grid">
     <div class="col-12 text-center py-5 text-muted small">
-      <span class="spinner-border spinner-border-sm me-2"></span>Načítám…
+      <span class="spinner-border spinner-border-sm me-2"></span>Loading…
     </div>
   </div>
 
   <!-- Mac Apps -->
-  <div class="section-label mt-2"><i class="bi bi-grid-3x3-gap"></i> Aplikace</div>
+  <div class="section-label mt-2"><i class="bi bi-grid-3x3-gap"></i> Apps</div>
   <div class="row g-3 mb-4" id="apps-grid">
     <div class="col-12 text-center py-3 text-muted small">
-      <span class="spinner-border spinner-border-sm me-2"></span>Načítám…
+      <span class="spinner-border spinner-border-sm me-2"></span>Loading…
     </div>
   </div>
 
   <!-- Models -->
-  <div class="section-label mt-2"><i class="bi bi-box-seam"></i> Ollama Modely</div>
+  <div class="section-label mt-2"><i class="bi bi-box-seam"></i> Ollama Models</div>
   <div class="card">
     <div class="card-header">
-      <span class="card-header-title">Nainstalované modely</span>
+      <span class="card-header-title">Installed models</span>
       <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#pullModal">
-        <i class="bi bi-plus-lg me-1"></i>Přidat model
+        <i class="bi bi-plus-lg me-1"></i>Add model
       </button>
     </div>
     <div class="card-body p-3" id="models-body">
-      <div class="empty"><i class="bi bi-arrow-repeat"></i>Načítám modely…</div>
+      <div class="empty"><i class="bi bi-arrow-repeat"></i>Loading models…</div>
     </div>
   </div>
 
@@ -418,30 +416,30 @@
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title"><i class="bi bi-download me-2 text-muted"></i>Stáhnout model</h5>
+        <h5 class="modal-title"><i class="bi bi-download me-2 text-muted"></i>Download model</h5>
         <button class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
-        <label class="form-label">Název modelu (z Ollama knihovny)</label>
+        <label class="form-label">Model name (from Ollama library)</label>
         <input type="text" id="pull-input" class="form-control"
-               placeholder="např. llama3.2, mistral, gemma2:9b…" />
+               placeholder="e.g. llama3.2, mistral, gemma2:9b…" />
         <div class="mt-2" style="font-size:.76rem;color:var(--muted);">
-          Příklady: <code>llama3.2</code> · <code>mistral</code> · <code>gemma2:9b</code> · <code>deepseek-r1:7b</code>
+          Examples: <code>llama3.2</code> · <code>mistral</code> · <code>gemma2:9b</code> · <code>deepseek-r1:7b</code>
         </div>
 
         <div id="pull-feedback" class="mt-3 d-none">
           <div class="d-flex align-items-center gap-2 mb-2">
             <span class="spinner-border spinner-border-sm text-primary" id="pull-spinner"></span>
-            <span id="pull-status-label" style="font-size:.8rem;color:var(--muted);">Stahuji…</span>
+            <span id="pull-status-label" style="font-size:.8rem;color:var(--muted);">Downloading…</span>
           </div>
           <div class="progress mb-2"><div class="progress-bar" id="pull-bar" style="width:0%"></div></div>
           <div class="pull-log" id="pull-log"></div>
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Zavřít</button>
+        <button class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Close</button>
         <button class="btn btn-primary btn-sm" id="pull-btn" onclick="doPull()">
-          <i class="bi bi-cloud-download me-1"></i>Stáhnout
+          <i class="bi bi-cloud-download me-1"></i>Download
         </button>
       </div>
     </div>
@@ -460,7 +458,7 @@
         <div id="mop-title" class="fw-semibold mb-1" style="font-size:.95rem"></div>
         <div id="mop-sub" style="font-size:.8rem;color:var(--muted)"></div>
         <button id="mop-close-btn" class="btn btn-outline-secondary btn-sm mt-3 d-none"
-                data-bs-dismiss="modal">Zavřít</button>
+                data-bs-dismiss="modal">Close</button>
       </div>
     </div>
   </div>
@@ -471,16 +469,16 @@
   <div class="modal-dialog modal-dialog-centered modal-sm">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title"><i class="bi bi-exclamation-circle me-2 text-warning"></i>Ollama není spuštěna</h5>
+        <h5 class="modal-title"><i class="bi bi-exclamation-circle me-2 text-warning"></i>Ollama is not running</h5>
       </div>
       <div class="modal-body" style="font-size:.85rem;color:var(--muted);">
-        Pro načtení modelu <strong id="start-ollama-model-name" class="text-white"></strong> je potřeba
-        nejdřív spustit Ollama server. Spustit ho teď?
+        To load model <strong id="start-ollama-model-name" class="text-white"></strong>,
+        Ollama server needs to be started first. Start it now?
       </div>
       <div class="modal-footer">
-        <button class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Zrušit</button>
+        <button class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
         <button class="btn btn-primary btn-sm" id="start-ollama-confirm-btn">
-          <i class="bi bi-play-circle me-1"></i>Spustit Ollama
+          <i class="bi bi-play-circle me-1"></i>Start Ollama
         </button>
       </div>
     </div>
@@ -492,15 +490,15 @@
   <div class="modal-dialog modal-dialog-centered modal-sm">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">Smazat model?</h5>
+        <h5 class="modal-title">Delete model?</h5>
       </div>
       <div class="modal-body" style="font-size:.85rem;color:var(--muted);">
-        Opravdu smazat <strong id="del-name" class="text-white"></strong>?
+        Are you sure you want to delete <strong id="del-name" class="text-white"></strong>?
       </div>
       <div class="modal-footer">
-        <button class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Zrušit</button>
+        <button class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
         <button class="btn btn-sm" id="del-confirm-btn"
-                style="background:var(--red);border-color:var(--red);color:#fff;">Smazat</button>
+                style="background:var(--red);border-color:var(--red);color:#fff;">Delete</button>
       </div>
     </div>
   </div>
@@ -522,11 +520,9 @@ const deleteModal = () => bootstrap.Modal.getOrCreateInstance(document.getElemen
 document.getElementById("start-ollama-confirm-btn").addEventListener("click", async () => {
   const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById("startOllamaModal"));
   modal.hide();
-  // Start Ollama
   const r = await apiFetch("/api/services/ollama/start", "POST");
   if (r.error) { toast(r.error, true); return; }
-  toast("Ollama se spouští…");
-  // Wait for it to come up, then load the model
+  toast("Starting Ollama…");
   await sleep(3000);
   await refreshStatus();
   if (pendingModelLoad) {
@@ -565,12 +561,12 @@ function renderApps(apps) {
           <div class="app-name">${escHtml(a.name)}</div>
           <div class="app-status ${a.running ? "running" : ""}">
             ${a.running
-              ? '<i class="bi bi-circle-fill" style="font-size:.5rem;vertical-align:middle"></i> Běží'
-              : 'Zavřeno'}
+              ? '<i class="bi bi-circle-fill" style="font-size:.5rem;vertical-align:middle"></i> Running'
+              : 'Closed'}
           </div>
         </div>
         <button class="btn btn-primary btn-sm" onclick="openApp('${id}', this)">
-          <i class="bi bi-arrow-up-right-square me-1"></i>Otevřít
+          <i class="bi bi-arrow-up-right-square me-1"></i>Open
         </button>
       </div>`;
     grid.appendChild(col);
@@ -587,7 +583,7 @@ async function openApp(id, btn) {
       await refreshApps();
     }
   } catch (e) {
-    toast("Chyba: " + e.message, true);
+    toast("Error: " + e.message, true);
   }
   btn.disabled = false;
 }
@@ -598,7 +594,7 @@ async function refreshStatus() {
     const data = await apiFetch("/api/status");
     renderServices(data);
     document.getElementById("updated-at").textContent =
-      "Aktualizováno " + new Date().toLocaleTimeString("cs-CZ");
+      "Updated " + new Date().toLocaleTimeString("en-US");
   } catch {}
 }
 
@@ -612,14 +608,14 @@ function renderServices(svcs) {
 
     const stopBtn = `
       <button class="btn btn-stop flex-grow-1" onclick="svcAction('${id}','stop',this)">
-        <i class="bi bi-stop-circle me-1"></i>Zastavit
+        <i class="bi bi-stop-circle me-1"></i>Stop
       </button>`;
     const startBtn = `
       <button class="btn btn-primary flex-grow-1" onclick="svcAction('${id}','start',this)">
-        <i class="bi bi-play-circle me-1"></i>Spustit
+        <i class="bi bi-play-circle me-1"></i>Start
       </button>`;
     const openBtn = s.open_url ? `
-      <button class="btn btn-outline-secondary" title="Otevřít v prohlížeči"
+      <button class="btn btn-outline-secondary" title="Open in browser"
               onclick="window.open('${s.open_url}','_blank')"
               ${!s.running ? "disabled" : ""}>
         <i class="bi bi-box-arrow-up-right"></i>
@@ -636,7 +632,7 @@ function renderServices(svcs) {
             </div>
             <span class="badge-status ${s.running ? "running" : "stopped"}">
               <span class="dot ${s.running ? "running" : "stopped"}"></span>
-              ${s.running ? "Běží" : "Zastaveno"}
+              ${s.running ? "Running" : "Stopped"}
             </span>
           </div>
           <div class="d-flex gap-2">
@@ -650,18 +646,17 @@ function renderServices(svcs) {
 }
 
 async function svcAction(id, action, btn) {
-  const label = action === "start" ? "Spouštím…" : "Zastavuji…";
+  const label = action === "start" ? "Starting…" : "Stopping…";
   btn.disabled = true;
   btn.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span>${label}`;
 
   try {
     const r = await apiFetch(`/api/services/${id}/${action}`, "POST");
     if (r.error) toast(r.error, true);
-    // Wait a moment then refresh
     await sleep(action === "start" ? 2500 : 800);
     await refreshStatus();
   } catch (e) {
-    toast("Chyba: " + e.message, true);
+    toast("Error: " + e.message, true);
     btn.disabled = false;
   }
 }
@@ -682,7 +677,7 @@ async function refreshModels() {
     const models = data.models || [];
     const runningSet = new Set(runningData.running || []);
     if (!models.length) {
-      body.innerHTML = `<div class="empty"><i class="bi bi-inbox"></i>Žádné modely nejsou nainstalovány.</div>`;
+      body.innerHTML = `<div class="empty"><i class="bi bi-inbox"></i>No models installed.</div>`;
       return;
     }
     body.innerHTML = models.map(m => {
@@ -693,7 +688,7 @@ async function refreshModels() {
              <i class="bi bi-chat-left-text"></i>${escHtml(note)}
            </div>`
         : `<div class="model-note" onclick="editNote('${escHtml(m.name)}', this)" style="opacity:.45">
-             <i class="bi bi-plus-circle"></i>přidat popis
+             <i class="bi bi-plus-circle"></i>add note
            </div>`;
 
       return `
@@ -701,7 +696,7 @@ async function refreshModels() {
         <div style="min-width:0;flex:1">
           <div class="d-flex align-items-center gap-2 flex-wrap">
             <span class="model-name">${escHtml(m.name)}</span>
-            ${loaded ? '<span class="badge-loaded"><i class="bi bi-lightning-fill"></i> V paměti</span>' : ""}
+            ${loaded ? '<span class="badge-loaded"><i class="bi bi-lightning-fill"></i> In memory</span>' : ""}
           </div>
           <div class="model-meta">${escHtml(m.size)}${m.modified ? " &nbsp;·&nbsp; " + escHtml(m.modified) : ""}</div>
           ${noteEl}
@@ -709,30 +704,30 @@ async function refreshModels() {
         <div class="model-actions">
           ${loaded
             ? `<button class="btn-toggle btn-unload" onclick="toggleModel('${escHtml(m.name)}','unload')">
-                 <i class="bi bi-stop-circle-fill"></i> Uvolnit
+                 <i class="bi bi-stop-circle-fill"></i> Unload
                </button>`
             : `<button class="btn-toggle btn-load" onclick="toggleModel('${escHtml(m.name)}','load')">
-                 <i class="bi bi-play-circle-fill"></i> Načíst
+                 <i class="bi bi-play-circle-fill"></i> Load
                </button>`
           }
-          <button class="btn-icon btn-del" onclick="confirmDelete('${escHtml(m.name)}')" title="Smazat model">
+          <button class="btn-icon btn-del" onclick="confirmDelete('${escHtml(m.name)}')" title="Delete model">
             <i class="bi bi-trash3"></i>
           </button>
         </div>
       </div>`;
     }).join("");
   } catch (e) {
-    body.innerHTML = `<div class="empty"><i class="bi bi-wifi-off"></i>Nepodařilo se načíst modely.</div>`;
+    body.innerHTML = `<div class="empty"><i class="bi bi-wifi-off"></i>Failed to load models.</div>`;
   }
 }
 
 // ── Model note inline edit ─────────────────────────────────────────────────────
 function editNote(name, el) {
-  const current = el.textContent.trim().replace(/^přidat popis$/, "");
+  const current = el.textContent.trim().replace(/^add note$/, "");
   const input = document.createElement("input");
   input.className = "model-note-input";
   input.value = current;
-  input.placeholder = "Napiš popis modelu…";
+  input.placeholder = "Enter model description…";
   el.replaceWith(input);
   input.focus();
 
@@ -749,7 +744,7 @@ function editNote(name, el) {
 const modelOpModal = () => bootstrap.Modal.getOrCreateInstance(document.getElementById("modelOpModal"));
 
 function showOpModal(action, name) {
-  const actionLabel = action === "load" ? "Načítám" : "Uvolňuji";
+  const actionLabel = action === "load" ? "Loading" : "Unloading";
   document.getElementById("mop-spinner").classList.remove("d-none");
   document.getElementById("mop-icon").classList.add("d-none");
   document.getElementById("mop-close-btn").classList.add("d-none");
@@ -766,14 +761,13 @@ function resolveOpModal(success, action, name, errorMsg) {
   if (success) {
     icon.textContent = "✅";
     document.getElementById("mop-title").textContent =
-      action === "load" ? "Model načten do paměti" : "Model uvolněn z paměti";
+      action === "load" ? "Model loaded into memory" : "Model unloaded from memory";
     document.getElementById("mop-sub").textContent = name;
-    // Auto-close after 1.5 s
     setTimeout(() => { modelOpModal().hide(); refreshModels(); }, 1500);
   } else {
     icon.textContent = "❌";
-    document.getElementById("mop-title").textContent = "Chyba";
-    document.getElementById("mop-sub").textContent = errorMsg || "Něco se pokazilo";
+    document.getElementById("mop-title").textContent = "Error";
+    document.getElementById("mop-sub").textContent = errorMsg || "Something went wrong";
   }
 }
 
@@ -796,7 +790,6 @@ async function doToggleModel(name, action) {
     const r = await apiFetch(`/api/models/${encodeURIComponent(name)}/${action}`, "POST");
     if (r.error) { resolveOpModal(false, action, name, r.error); return; }
 
-    // Poll until done
     const poller = setInterval(async () => {
       const s = await apiFetch(`/api/models/${encodeURIComponent(name)}/op-status`);
       if (s.status === "done") {
@@ -826,10 +819,10 @@ async function doDelete(name) {
   try {
     const r = await apiFetch(`/api/models/${encodeURIComponent(name)}`, "DELETE");
     if (r.error) { toast(r.error, true); return; }
-    toast(`Model ${name} smazán.`);
+    toast(`Model ${name} deleted.`);
     refreshModels();
   } catch (e) {
-    toast("Chyba: " + e.message, true);
+    toast("Error: " + e.message, true);
   }
 }
 
@@ -842,7 +835,7 @@ async function doPull() {
   document.getElementById("pull-feedback").classList.remove("d-none");
   document.getElementById("pull-spinner").classList.remove("d-none");
   document.getElementById("pull-btn").disabled = true;
-  document.getElementById("pull-status-label").textContent = "Spouštím stahování…";
+  document.getElementById("pull-status-label").textContent = "Starting download…";
   document.getElementById("pull-log").textContent = "";
   document.getElementById("pull-bar").style.width = "0%";
 
@@ -851,7 +844,7 @@ async function doPull() {
     if (r.error) { toast(r.error, true); resetPullUI(); return; }
     startPullPoller(name);
   } catch (e) {
-    toast("Chyba: " + e.message, true);
+    toast("Error: " + e.message, true);
     resetPullUI();
   }
 }
@@ -872,7 +865,7 @@ function startPullPoller(name) {
       if (s.status === "done") {
         clearInterval(pullPoller); pullPoller = null;
         document.getElementById("pull-spinner").classList.add("d-none");
-        document.getElementById("pull-status-label").textContent = "✓ Staženo úspěšně!";
+        document.getElementById("pull-status-label").textContent = "✓ Downloaded successfully!";
         document.getElementById("pull-bar").style.width = "100%";
         document.getElementById("pull-btn").disabled = false;
         document.getElementById("pull-input").value = "";
@@ -881,10 +874,10 @@ function startPullPoller(name) {
         clearInterval(pullPoller); pullPoller = null;
         document.getElementById("pull-spinner").classList.add("d-none");
         document.getElementById("pull-status-label").innerHTML =
-          '<span style="color:var(--red)">✗ Chyba při stahování</span>';
+          '<span style="color:var(--red)">✗ Download failed</span>';
         document.getElementById("pull-btn").disabled = false;
       } else {
-        document.getElementById("pull-status-label").textContent = "Stahuji…";
+        document.getElementById("pull-status-label").textContent = "Downloading…";
       }
     } catch {}
   }, 1000);
@@ -901,7 +894,6 @@ document.getElementById("pullModal").addEventListener("hidden.bs.modal", () => {
   refreshModels();
 });
 
-// Allow Enter key to trigger pull
 document.getElementById("pull-input").addEventListener("keydown", e => {
   if (e.key === "Enter") doPull();
 });

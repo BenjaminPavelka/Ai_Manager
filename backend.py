@@ -9,7 +9,7 @@ import json
 
 from services_config import SERVICES, APPS
 
-# Správná cesta ke zdrojům – funguje jak při vývoji, tak v PyInstaller bundlu
+# Resolve resource path for both dev and PyInstaller frozen bundle
 if getattr(sys, "frozen", False):
     _BASE = sys._MEIPASS
 else:
@@ -17,7 +17,7 @@ else:
 
 app = Flask(__name__, template_folder=os.path.join(_BASE, "templates"))
 
-# Data ukládáme do ~/Library/Application Support/AI Manager (ne do .app)
+# Persist data in ~/Library/Application Support/AI Manager (not inside .app)
 _APP_SUPPORT = os.path.expanduser("~/Library/Application Support/AI Manager")
 os.makedirs(_APP_SUPPORT, exist_ok=True)
 NOTES_FILE = os.path.join(_APP_SUPPORT, "model_notes.json")
@@ -114,11 +114,11 @@ def api_status():
 @app.route("/api/services/<sid>/start", methods=["POST"])
 def start_service(sid: str):
     if sid not in SERVICES:
-        return jsonify({"error": "Neznámá služba"}), 404
+        return jsonify({"error": "Unknown service"}), 404
 
     svc = SERVICES[sid]
     if port_open(svc["port"]):
-        return jsonify({"ok": True, "msg": "Již běží"})
+        return jsonify({"ok": True, "msg": "Already running"})
 
     cmd = svc["start_cmd"]
 
@@ -143,14 +143,14 @@ def start_service(sid: str):
         elif method == "pip":
             cmd = ["open-webui", "serve"]
         else:
-            return jsonify({"error": "Open WebUI není nainstalováno (Docker ani pip)"}), 500
+            return jsonify({"error": "Open WebUI is not installed (neither Docker nor pip)"}), 500
 
     try:
         proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
         _processes[sid] = proc
         return jsonify({"ok": True})
     except FileNotFoundError as exc:
-        return jsonify({"error": f"Příkaz nenalezen: {exc}"}), 500
+        return jsonify({"error": f"Command not found: {exc}"}), 500
     except Exception as exc:
         return jsonify({"error": str(exc)}), 500
 
@@ -158,7 +158,7 @@ def start_service(sid: str):
 @app.route("/api/services/<sid>/stop", methods=["POST"])
 def stop_service(sid: str):
     if sid not in SERVICES:
-        return jsonify({"error": "Neznámá služba"}), 404
+        return jsonify({"error": "Unknown service"}), 404
 
     svc = SERVICES[sid]
 
@@ -180,7 +180,7 @@ def stop_service(sid: str):
 
     if killed:
         return jsonify({"ok": True})
-    return jsonify({"ok": False, "msg": "Žádný proces na daném portu nenalezen"})
+    return jsonify({"ok": False, "msg": "No process found on that port"})
 
 
 # ── Models ─────────────────────────────────────────────────────────────────────
@@ -208,7 +208,7 @@ def api_models():
             models.append({"name": name, "id": id_, "size": size, "modified": modified})
         return jsonify({"models": models})
     except FileNotFoundError:
-        return jsonify({"error": "Ollama není nainstalována", "models": []})
+        return jsonify({"error": "Ollama is not installed", "models": []})
     except Exception as exc:
         return jsonify({"error": str(exc), "models": []})
 
@@ -302,10 +302,10 @@ def pull_model():
     body = request.get_json(silent=True) or {}
     name = (body.get("name") or "").strip()
     if not name:
-        return jsonify({"error": "Chybí název modelu"}), 400
+        return jsonify({"error": "Model name is required"}), 400
 
     if name in _pull_progress and _pull_progress[name].get("status") == "pulling":
-        return jsonify({"ok": True, "msg": "Již se stahuje"})
+        return jsonify({"ok": True, "msg": "Already downloading"})
 
     _pull_progress[name] = {"status": "pulling", "lines": [], "pct": 0}
 
@@ -371,7 +371,7 @@ def api_apps_status():
 @app.route("/api/apps/<aid>/open", methods=["POST"])
 def open_app(aid: str):
     if aid not in APPS:
-        return jsonify({"error": "Neznámá aplikace"}), 404
+        return jsonify({"error": "Unknown app"}), 404
     try:
         subprocess.Popen(["open", "-a", APPS[aid]["app_name"]])
         return jsonify({"ok": True})

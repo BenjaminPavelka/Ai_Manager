@@ -44,16 +44,16 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           name: "AI Manager ${{ steps.version.outputs.VERSION }}"
           body: |
-            ## Stažení
+            ## Download
 
-            1. Stáhni **AI.Manager.zip**
-            2. Rozbal a přetáhni `AI Manager.app` do složky `/Applications`
-            3. Pravý klik → **Otevřít** (první spuštění – macOS bezpečnostní dialog)
+            1. Download **AI.Manager.zip**
+            2. Unzip and drag `AI Manager.app` to `/Applications`
+            3. Right-click → **Open** (first launch – bypasses macOS security dialog)
 
-            > **Požadavky:** macOS 12+, [Ollama](https://ollama.ai)
+            > **Requirements:** macOS 12+, [Ollama](https://ollama.ai)
 
             ---
-            *Automaticky sestaveno z tagu `${{ steps.version.outputs.VERSION }}`*
+            *Automatically built from tag `${{ steps.version.outputs.VERSION }}`*
           files: AI.Manager.zip
           draft: false
           prerelease: ${{ contains(github.ref_name, '-') }}

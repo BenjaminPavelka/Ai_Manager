@@ -74,6 +74,6 @@ app = BUNDLE(
         "LSUIElement": True,
         "NSUserNotificationAlertStyle": "alert",
         "NSHighResolutionCapable": True,
-        "NSAppleEventsUsageDescription": "AI Manager potřebuje přístup k systémovým událostem.",
+        "NSAppleEventsUsageDescription": "AI Manager needs access to System Events.",
     },
 )

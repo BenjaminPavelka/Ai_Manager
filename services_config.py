@@ -3,7 +3,7 @@ PORT = 7654
 SERVICES = {
     "ollama": {
         "name": "Ollama Server",
-        "description": "Lokální LLM inference server",
+        "description": "Local LLM inference server",
         "icon": "🦙",
         "port": 11434,
         "start_cmd": ["ollama", "serve"],
@@ -11,7 +11,7 @@ SERVICES = {
     },
     "open-webui": {
         "name": "Open WebUI",
-        "description": "Webové UI pro chat s lokálními modely",
+        "description": "Web UI for chatting with local models",
         "icon": "🌐",
         "port": 3000,
         "start_cmd": None,
