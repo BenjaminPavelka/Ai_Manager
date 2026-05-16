@@ -6,6 +6,7 @@ import threading
 import time
 import urllib.request
 import json
+import webbrowser
 import rumps
 
 from services_config import SERVICES, APPS, PORT
