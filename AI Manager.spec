@@ -17,6 +17,7 @@ hidden_imports = [
     "CoreFoundation",
     "LaunchServices",
     "UserNotifications",
+    "WebKit",
 ]
 
 a = Analysis(

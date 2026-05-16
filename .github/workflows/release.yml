@@ -24,7 +24,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install --upgrade pip
-          pip install flask rumps pyobjc-framework-Cocoa pyinstaller
+          pip install flask rumps pyobjc-framework-Cocoa pyobjc-framework-WebKit pyinstaller
 
       - name: Build .app with PyInstaller
         run: |

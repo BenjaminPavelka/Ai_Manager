@@ -6,12 +6,11 @@ import threading
 import time
 import urllib.request
 import json
-import webbrowser
-
 import rumps
 
 from services_config import SERVICES, APPS, PORT
 from version import VERSION
+import dashboard_window
 
 REFRESH_INTERVAL = 8
 MONITOR_INTERVAL = 10
@@ -40,7 +39,7 @@ class AIManagerMenuBar(rumps.App):
     def _build_menu(self):
         open_dashboard = rumps.MenuItem(
             "📊  Open Dashboard",
-            callback=lambda _: webbrowser.open(f"http://localhost:{PORT}"),
+            callback=lambda _: dashboard_window.open_dashboard(),
         )
 
         service_items = []

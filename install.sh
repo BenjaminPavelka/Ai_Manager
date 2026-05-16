@@ -12,7 +12,7 @@ echo "==> AI Manager – instalace"
 if [ ! -f "$PYTHON" ]; then
   echo "  Vytvářím virtualní prostředí…"
   python3 -m venv "$HOME/ai-manager-venv"
-  "$HOME/ai-manager-venv/bin/pip" install flask rumps pyobjc-framework-Cocoa -q
+  "$HOME/ai-manager-venv/bin/pip" install flask rumps pyobjc-framework-Cocoa pyobjc-framework-WebKit -q
   echo "  ✓ Závislosti nainstalovány"
 else
   echo "  ✓ Virtualní prostředí nalezeno"

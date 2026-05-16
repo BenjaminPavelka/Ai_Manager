@@ -36,7 +36,7 @@ Lives in the menu bar — always at hand, no unnecessary windows.
 | **Start / Stop** | Control services directly from the menu bar |
 | **Models in memory** | Lists all currently loaded Ollama models by name |
 | **Mac Apps** | Docker, GitHub Desktop, Goose — status + click to open |
-| **Dashboard** | Web UI in the browser at localhost:7654 |
+| **Dashboard** | Native app window powered by WebKit — no browser needed |
 | **Notifications** | macOS alerts when a service crashes or comes back up |
 | **Open at Login** | Toggle auto-start on login directly from the menu |
 
@@ -45,14 +45,15 @@ Lives in the menu bar — always at hand, no unnecessary windows.
 ## Architecture
 
 ```
-main.py            – entry point: Flask thread + rumps on main thread
-backend.py         – Flask REST API (/api/* endpoints)
-menu_bar.py        – rumps menu bar + crash monitor
-services_config.py – service and app configuration (single source of truth)
-version.py         – version number
+main.py              – entry point: Flask thread + rumps on main thread
+backend.py           – Flask REST API (/api/* endpoints)
+menu_bar.py          – rumps menu bar + crash monitor
+dashboard_window.py  – native WebKit window for the dashboard
+services_config.py   – service and app configuration (single source of truth)
+version.py           – version number
 templates/
-  index.html       – web dashboard (Bootstrap 5)
-resources/         – AppIcon.icns for build
+  index.html         – web dashboard (Bootstrap 5)
+resources/           – AppIcon.icns for build
 .github/workflows/
   release.yml      – GitHub Actions: build + GitHub Release on tag push
 ```
