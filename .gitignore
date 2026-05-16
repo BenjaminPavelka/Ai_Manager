@@ -7,6 +7,6 @@ dist/
 *.egg-info/
 .eggs/
 venv/
-~/ai-manager-venv/
+*.venv/
 model_notes.json
-.claude/worktrees/stoic-hamilton-d1a102/
+.claude/

@@ -3,6 +3,7 @@
 [![Build & Release](https://github.com/BenjaminPavelka/Ai_Manager_Claud_APP/actions/workflows/release.yml/badge.svg)](https://github.com/BenjaminPavelka/Ai_Manager_Claud_APP/actions/workflows/release.yml)
 [![Latest Release](https://img.shields.io/github/v/release/BenjaminPavelka/Ai_Manager_Claud_APP)](https://github.com/BenjaminPavelka/Ai_Manager_Claud_APP/releases/latest)
 [![macOS](https://img.shields.io/badge/macOS-12%2B-blue?logo=apple)](https://github.com/BenjaminPavelka/Ai_Manager_Claud_APP/releases/latest)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 > ⚠️ **Disclaimer:** This app was built by a complete amateur with the generous help of Claude AI.
 > It works on my machine. Probably. No warranties, no support, no refunds.
