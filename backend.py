@@ -51,16 +51,25 @@ def port_open(port: int, timeout: float = 1.5) -> bool:
         return False
 
 
-def detect_open_webui_method() -> str | None:
+def docker_installed() -> bool:
     try:
-        r = subprocess.run(
-            ["docker", "ps", "-a", "--filter", "name=open-webui", "--format", "{{.Names}}"],
-            capture_output=True, text=True, timeout=4,
-        )
-        if r.returncode == 0 and "open-webui" in r.stdout:
-            return "docker"
+        r = subprocess.run(["which", "docker"], capture_output=True, text=True, timeout=3)
+        return r.returncode == 0 and bool(r.stdout.strip())
     except Exception:
-        pass
+        return False
+
+
+def docker_daemon_running() -> bool:
+    try:
+        r = subprocess.run(["docker", "info"], capture_output=True, timeout=4)
+        return r.returncode == 0
+    except Exception:
+        return False
+
+
+def detect_open_webui_method() -> str | None:
+    if docker_installed():
+        return "docker"
     try:
         r = subprocess.run(["which", "open-webui"], capture_output=True, text=True, timeout=3)
         if r.returncode == 0 and r.stdout.strip():
@@ -125,21 +134,34 @@ def start_service(sid: str):
     if sid == "open-webui" and cmd is None:
         method = detect_open_webui_method()
         if method == "docker":
-            r = subprocess.run(
-                ["docker", "ps", "-a", "--filter", "name=^open-webui$", "--format", "{{.Names}}"],
-                capture_output=True, text=True,
-            )
-            if "open-webui" in r.stdout:
-                cmd = ["docker", "start", "open-webui"]
-            else:
-                cmd = [
-                    "docker", "run", "-d", "--name", "open-webui",
-                    "-p", "3000:8080",
-                    "--add-host=host.docker.internal:host-gateway",
-                    "-v", "open-webui:/app/backend/data",
-                    "--restart", "always",
-                    "ghcr.io/open-webui/open-webui:main",
-                ]
+            def _start_webui_docker():
+                if not docker_daemon_running():
+                    subprocess.Popen(["open", "-a", "Docker"])
+                    for _ in range(30):          # wait up to 60 s
+                        time.sleep(2)
+                        if docker_daemon_running():
+                            break
+                    else:
+                        return                   # Docker never came up
+                r = subprocess.run(
+                    ["docker", "ps", "-a", "--filter", "name=^open-webui$", "--format", "{{.Names}}"],
+                    capture_output=True, text=True,
+                )
+                if "open-webui" in r.stdout:
+                    docker_cmd = ["docker", "start", "open-webui"]
+                else:
+                    docker_cmd = [
+                        "docker", "run", "-d", "--name", "open-webui",
+                        "-p", "3000:8080",
+                        "--add-host=host.docker.internal:host-gateway",
+                        "-v", "open-webui:/app/backend/data",
+                        "--restart", "always",
+                        "ghcr.io/open-webui/open-webui:main",
+                    ]
+                subprocess.run(docker_cmd, capture_output=True)
+
+            threading.Thread(target=_start_webui_docker, daemon=True).start()
+            return jsonify({"ok": True})
         elif method == "pip":
             cmd = ["open-webui", "serve"]
         else:
