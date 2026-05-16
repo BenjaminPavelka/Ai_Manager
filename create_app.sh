@@ -3,20 +3,44 @@
 set -euo pipefail
 
 PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
-VENV_PYTHON="$HOME/ai-manager-venv/bin/python3"
 APP_PATH="/Applications/AI Manager.app"
 CONTENTS="$APP_PATH/Contents"
 
+# Framework Python je potřeba pro menu bar (CLI python3 menu bar nezobrazí)
+FRAMEWORK_PYTHON="$(ls /opt/homebrew/Cellar/python@3.*/*/Frameworks/Python.framework/Versions/Current/Resources/Python.app/Contents/MacOS/Python 2>/dev/null | tail -1)"
+if [ -z "$FRAMEWORK_PYTHON" ]; then
+  echo "❌  Framework Python nenalezen. Nainstaluj Python přes Homebrew: brew install python"
+  exit 1
+fi
+
+PY_VER="$("$FRAMEWORK_PYTHON" -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')"
+SITE_PACKAGES="$HOME/ai-manager-venv/lib/python${PY_VER}/site-packages"
+
+if [ ! -d "$SITE_PACKAGES/rumps" ]; then
+  echo "❌  Virtualní prostředí nenalezeno. Spusť nejdřív:"
+  echo "    python3 -m venv ~/ai-manager-venv"
+  echo "    ~/ai-manager-venv/bin/pip install flask rumps pyobjc-framework-Cocoa"
+  exit 1
+fi
+
 echo "==> Vytvářím $APP_PATH …"
+echo "    Python:        $FRAMEWORK_PYTHON"
+echo "    Site-packages: $SITE_PACKAGES"
 
 # Struktura .app bundle
 mkdir -p "$CONTENTS/MacOS"
 mkdir -p "$CONTENTS/Resources"
 
-# Spustitelný shell script uvnitř .app
+# Launcher – musí používat Framework Python (ne CLI python3) pro zobrazení menu baru
 cat > "$CONTENTS/MacOS/AI Manager" <<SCRIPT
 #!/bin/bash
-exec "$VENV_PYTHON" "$PROJECT_DIR/main.py"
+LOG="\$HOME/Library/Logs/AIManager.log"
+mkdir -p "\$(dirname "\$LOG")"
+echo "--- START \$(date) ---" >> "\$LOG"
+export PYTHONPATH="$SITE_PACKAGES:$PROJECT_DIR"
+export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin"
+cd "$PROJECT_DIR"
+exec "$FRAMEWORK_PYTHON" "$PROJECT_DIR/main.py" >> "\$LOG" 2>&1
 SCRIPT
 chmod +x "$CONTENTS/MacOS/AI Manager"
 
@@ -47,8 +71,10 @@ if [ -f "$PROJECT_DIR/resources/AppIcon.icns" ]; then
   /usr/libexec/PlistBuddy -c "Add :CFBundleIconFile string AppIcon" "$CONTENTS/Info.plist" 2>/dev/null || true
 fi
 
+# Odstranění macOS quarantine (jinak macOS blokuje spuštění)
+xattr -dr com.apple.quarantine "$APP_PATH" 2>/dev/null || true
+
 echo "✅  Hotovo: $APP_PATH"
 echo ""
 echo "Přidej do přihlašovacích položek:"
 echo "  Nastavení → Obecné → Přihlašovací položky → +"
-echo "  nebo spusť: open '$APP_PATH' a přidej v Nastavení"
