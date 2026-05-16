@@ -1,0 +1,57 @@
+name: Build & Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+jobs:
+  build:
+    name: Build macOS .app
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install flask rumps pyobjc-framework-Cocoa pyinstaller
+
+      - name: Build .app with PyInstaller
+        run: |
+          pyinstaller "AI Manager.spec"
+
+      - name: Zip the .app
+        run: |
+          cd dist
+          zip -r "../AI.Manager.zip" "AI Manager.app"
+
+      - name: Get version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "AI Manager ${{ steps.version.outputs.VERSION }}"
+          body: |
+            ## Stažení
+
+            1. Stáhni **AI.Manager.zip**
+            2. Rozbal a přetáhni `AI Manager.app` do složky `/Applications`
+            3. Pravý klik → **Otevřít** (první spuštění – macOS bezpečnostní dialog)
+
+            > **Požadavky:** macOS 12+, [Ollama](https://ollama.ai)
+
+            ---
+            *Automaticky sestaveno z tagu `${{ steps.version.outputs.VERSION }}`*
+          files: AI.Manager.zip
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-') }}

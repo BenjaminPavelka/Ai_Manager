@@ -3,14 +3,24 @@ import subprocess
 import socket
 import threading
 import os
+import sys
 import time
 import json
 
 from services_config import SERVICES, APPS
 
-app = Flask(__name__, template_folder="templates")
+# Správná cesta ke zdrojům – funguje jak při vývoji, tak v PyInstaller bundlu
+if getattr(sys, "frozen", False):
+    _BASE = sys._MEIPASS
+else:
+    _BASE = os.path.dirname(os.path.abspath(__file__))
 
-NOTES_FILE = os.path.join(os.path.dirname(__file__), "model_notes.json")
+app = Flask(__name__, template_folder=os.path.join(_BASE, "templates"))
+
+# Data ukládáme do ~/Library/Application Support/AI Manager (ne do .app)
+_APP_SUPPORT = os.path.expanduser("~/Library/Application Support/AI Manager")
+os.makedirs(_APP_SUPPORT, exist_ok=True)
+NOTES_FILE = os.path.join(_APP_SUPPORT, "model_notes.json")
 
 
 def load_notes() -> dict:
