@@ -9,6 +9,9 @@ import json
 
 from services_config import SERVICES, APPS
 
+# When launched as .app from Finder the PATH is minimal — add common tool locations
+os.environ["PATH"] = "/opt/homebrew/bin:/usr/local/bin:" + os.environ.get("PATH", "")
+
 # Resolve resource path for both dev and PyInstaller frozen bundle
 if getattr(sys, "frozen", False):
     _BASE = sys._MEIPASS

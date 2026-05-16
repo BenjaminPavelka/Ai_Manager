@@ -13,6 +13,8 @@ from services_config import SERVICES, APPS, PORT
 from version import VERSION
 import dashboard_window
 
+os.environ["PATH"] = "/opt/homebrew/bin:/usr/local/bin:" + os.environ.get("PATH", "")
+
 REFRESH_INTERVAL = 8
 MONITOR_INTERVAL = 10
 
