@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+*.pyo
+.DS_Store
+build/
+dist/
+*.egg-info/
+.eggs/
+venv/
+~/ai-manager-venv/
+model_notes.json
