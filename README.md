@@ -13,6 +13,12 @@
 Native macOS menu bar app for managing local AI services, models, and tools.
 Lives in the menu bar — always at hand, no unnecessary windows.
 
+<div align="center">
+  <img src="screenshots/menubar.png" width="260" alt="Menu bar" />
+  &nbsp;&nbsp;&nbsp;
+  <img src="screenshots/dashboard.png" width="780" alt="Dashboard" />
+</div>
+
 ---
 
 ## ⬇️ Download
