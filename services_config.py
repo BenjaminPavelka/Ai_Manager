@@ -30,8 +30,9 @@ SERVICES = {
         "start_cmd": None,
         "open_url": None,
         "cli_cmd": (
-            "docker exec -it openosint openosint"
-            " --provider ollama"
+            "docker exec -it"
+            " $(docker ps --filter name=openosint --format '{{.Names}}' | head -1)"
+            " openosint --provider ollama"
             " --ollama-host http://host.docker.internal:11434"
             " --ollama-model qwen3.6:35b"
         ),

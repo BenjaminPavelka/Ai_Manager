@@ -176,7 +176,7 @@ class AIManagerMenuBar(rumps.App):
     def _docker_container_running(name: str) -> bool:
         try:
             r = subprocess.run(
-                ["docker", "ps", "--filter", f"name=^{name}$", "--format", "{{.Names}}"],
+                ["docker", "ps", "--filter", f"name={name}", "--format", "{{.Names}}"],
                 capture_output=True, text=True, timeout=4,
             )
             return name in r.stdout
@@ -192,11 +192,17 @@ class AIManagerMenuBar(rumps.App):
 
     @staticmethod
     def _open_terminal(cmd: str):
-        subprocess.Popen([
-            "osascript",
-            "-e", 'tell application "Terminal" to activate',
-            "-e", f'tell application "Terminal" to do script "{cmd}"',
-        ])
+        script = (
+            'tell application "iTerm2"\n'
+            '    activate\n'
+            '    tell (create window with default profile)\n'
+            '        tell current session\n'
+            f'            write text "{cmd}"\n'
+            '        end tell\n'
+            '    end tell\n'
+            'end tell'
+        )
+        subprocess.Popen(["osascript", "-e", script])
 
     @staticmethod
     def _app_running(process_name: str) -> bool:

@@ -73,7 +73,7 @@ def docker_daemon_running() -> bool:
 def docker_container_running(name: str) -> bool:
     try:
         r = subprocess.run(
-            ["docker", "ps", "--filter", f"name=^{name}$", "--format", "{{.Names}}"],
+            ["docker", "ps", "--filter", f"name={name}", "--format", "{{.Names}}"],
             capture_output=True, text=True, timeout=4,
         )
         return name in r.stdout
@@ -254,11 +254,17 @@ def open_terminal(sid: str):
     if not cli_cmd:
         return jsonify({"error": "No CLI command configured for this service"}), 400
     try:
-        subprocess.Popen([
-            "osascript",
-            "-e", 'tell application "Terminal" to activate',
-            "-e", f'tell application "Terminal" to do script "{cli_cmd}"',
-        ])
+        script = (
+            'tell application "iTerm2"\n'
+            '    activate\n'
+            '    tell (create window with default profile)\n'
+            '        tell current session\n'
+            f'            write text "{cli_cmd}"\n'
+            '        end tell\n'
+            '    end tell\n'
+            'end tell'
+        )
+        subprocess.Popen(["osascript", "-e", script])
         return jsonify({"ok": True})
     except Exception as exc:
         return jsonify({"error": str(exc)}), 500
