@@ -54,6 +54,12 @@ class AIManagerMenuBar(rumps.App):
                     callback=lambda _, u=svc["open_url"]: webbrowser.open(u),
                 ))
                 parent.add(None)
+            if svc.get("cli_cmd"):
+                parent.add(rumps.MenuItem(
+                    "  >_  Open Terminal",
+                    callback=lambda _, c=svc["cli_cmd"]: self._open_terminal(c),
+                ))
+                parent.add(None)
             parent.add(rumps.MenuItem("  ▶  Start", callback=self._make_action(sid, "start")))
             parent.add(rumps.MenuItem("  ■  Stop",  callback=self._make_action(sid, "stop")))
             self._service_menu_items[sid] = parent
@@ -167,6 +173,32 @@ class AIManagerMenuBar(rumps.App):
             return False
 
     @staticmethod
+    def _docker_container_running(name: str) -> bool:
+        try:
+            r = subprocess.run(
+                ["docker", "ps", "--filter", f"name=^{name}$", "--format", "{{.Names}}"],
+                capture_output=True, text=True, timeout=4,
+            )
+            return name in r.stdout
+        except Exception:
+            return False
+
+    def _service_running(self, svc: dict) -> bool:
+        if svc.get("docker_container"):
+            return self._docker_container_running(svc["docker_container"])
+        if svc.get("port"):
+            return self._port_open(svc["port"])
+        return False
+
+    @staticmethod
+    def _open_terminal(cmd: str):
+        subprocess.Popen([
+            "osascript",
+            "-e", 'tell application "Terminal" to activate',
+            "-e", f'tell application "Terminal" to do script "{cmd}"',
+        ])
+
+    @staticmethod
     def _app_running(process_name: str) -> bool:
         try:
             return subprocess.run(
@@ -179,7 +211,7 @@ class AIManagerMenuBar(rumps.App):
 
     def _refresh_status(self, _sender):
         for sid, svc in SERVICES.items():
-            running = self._port_open(svc["port"])
+            running = self._service_running(svc)
             dot   = "●" if running else "○"
             label = "Running" if running else "Stopped"
             self._service_menu_items[sid].title = f"{svc['icon']}  {svc['name']}  {dot} {label}"
@@ -207,7 +239,7 @@ class AIManagerMenuBar(rumps.App):
             dot = "●" if running else "○"
             self._app_menu_items[aid].title = f"{acfg['icon']}  {acfg['name']}  {dot}"
 
-        ollama_running = self._port_open(SERVICES["ollama"]["port"])
+        ollama_running = self._service_running(SERVICES["ollama"])
         self.title = "🤖" if (ollama_running and models) else "🌙"
 
     # ── Crash monitor ──────────────────────────────────────────────────────────
@@ -216,7 +248,7 @@ class AIManagerMenuBar(rumps.App):
         time.sleep(5)
         while True:
             for sid, svc in SERVICES.items():
-                running = self._port_open(svc["port"])
+                running = self._service_running(svc)
                 prev = self._prev_states.get(sid)
                 if prev is True and not running:
                     rumps.notification(

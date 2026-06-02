@@ -620,6 +620,12 @@ function renderServices(svcs) {
               ${!s.running ? "disabled" : ""}>
         <i class="bi bi-box-arrow-up-right"></i>
       </button>` : "";
+    const termBtn = s.cli_cmd ? `
+      <button class="btn btn-outline-secondary" title="Open Terminal"
+              onclick="openTerminal('${id}', this)"
+              ${!s.running ? "disabled" : ""}>
+        <i class="bi bi-terminal"></i>
+      </button>` : "";
 
     col.innerHTML = `
       <div class="card h-100 ${s.running ? "is-running" : ""}">
@@ -638,6 +644,7 @@ function renderServices(svcs) {
           <div class="d-flex gap-2">
             ${s.running ? stopBtn : startBtn}
             ${openBtn}
+            ${termBtn}
           </div>
         </div>
       </div>`;
@@ -659,6 +666,17 @@ async function svcAction(id, action, btn) {
     toast("Error: " + e.message, true);
     btn.disabled = false;
   }
+}
+
+async function openTerminal(id, btn) {
+  btn.disabled = true;
+  try {
+    const r = await apiFetch(`/api/services/${id}/terminal`, "POST");
+    if (r.error) toast(r.error, true);
+  } catch (e) {
+    toast("Error: " + e.message, true);
+  }
+  setTimeout(() => { btn.disabled = false; }, 1000);
 }
 
 // ── Models ─────────────────────────────────────────────────────────────────────

@@ -70,6 +70,25 @@ def docker_daemon_running() -> bool:
         return False
 
 
+def docker_container_running(name: str) -> bool:
+    try:
+        r = subprocess.run(
+            ["docker", "ps", "--filter", f"name=^{name}$", "--format", "{{.Names}}"],
+            capture_output=True, text=True, timeout=4,
+        )
+        return name in r.stdout
+    except Exception:
+        return False
+
+
+def service_running(svc: dict) -> bool:
+    if svc.get("docker_container"):
+        return docker_container_running(svc["docker_container"])
+    if svc.get("port"):
+        return port_open(svc["port"])
+    return False
+
+
 def detect_open_webui_method() -> str | None:
     if docker_installed():
         return "docker"
@@ -112,13 +131,14 @@ def index():
 def api_status():
     result = {}
     for sid, svc in SERVICES.items():
-        running = port_open(svc["port"])
+        running = service_running(svc)
         result[sid] = {
             "name": svc["name"],
             "description": svc["description"],
             "icon": svc["icon"],
             "running": running,
             "open_url": svc.get("open_url"),
+            "cli_cmd": svc.get("cli_cmd"),
         }
     return jsonify(result)
 
@@ -129,10 +149,26 @@ def start_service(sid: str):
         return jsonify({"error": "Unknown service"}), 404
 
     svc = SERVICES[sid]
-    if port_open(svc["port"]):
+    if service_running(svc):
         return jsonify({"ok": True, "msg": "Already running"})
 
-    cmd = svc["start_cmd"]
+    cmd = svc.get("start_cmd")
+
+    # ── Docker-container services (openosint, etc.) ────────────────────────────
+    if cmd is None and svc.get("docker_container") and sid != "open-webui":
+        container = svc["docker_container"]
+        def _start_container(c=container):
+            if not docker_daemon_running():
+                subprocess.Popen(["open", "-a", "Docker"])
+                for _ in range(30):
+                    time.sleep(2)
+                    if docker_daemon_running():
+                        break
+                else:
+                    return
+            subprocess.run(["docker", "start", c], capture_output=True)
+        threading.Thread(target=_start_container, daemon=True).start()
+        return jsonify({"ok": True})
 
     if sid == "open-webui" and cmd is None:
         method = detect_open_webui_method()
@@ -187,9 +223,11 @@ def stop_service(sid: str):
 
     svc = SERVICES[sid]
 
-    if sid == "open-webui" and detect_open_webui_method() == "docker":
+    # Docker-managed container services
+    if svc.get("docker_container"):
+        container = svc["docker_container"]
         try:
-            subprocess.run(["docker", "stop", "open-webui"], capture_output=True, timeout=15)
+            subprocess.run(["docker", "stop", container], capture_output=True, timeout=20)
             _processes.pop(sid, None)
             return jsonify({"ok": True})
         except Exception as exc:
@@ -206,6 +244,24 @@ def stop_service(sid: str):
     if killed:
         return jsonify({"ok": True})
     return jsonify({"ok": False, "msg": "No process found on that port"})
+
+
+@app.route("/api/services/<sid>/terminal", methods=["POST"])
+def open_terminal(sid: str):
+    if sid not in SERVICES:
+        return jsonify({"error": "Unknown service"}), 404
+    cli_cmd = SERVICES[sid].get("cli_cmd")
+    if not cli_cmd:
+        return jsonify({"error": "No CLI command configured for this service"}), 400
+    try:
+        subprocess.Popen([
+            "osascript",
+            "-e", 'tell application "Terminal" to activate',
+            "-e", f'tell application "Terminal" to do script "{cli_cmd}"',
+        ])
+        return jsonify({"ok": True})
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
 
 
 # ── Models ─────────────────────────────────────────────────────────────────────
