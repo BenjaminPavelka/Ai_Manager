@@ -6,6 +6,8 @@ import os
 import sys
 import time
 import json
+import datetime
+from collections import deque
 
 from services_config import SERVICES, APPS
 
@@ -23,8 +25,11 @@ app = Flask(__name__, template_folder=os.path.join(_BASE, "templates"))
 # Persist data in ~/Library/Application Support/AI Manager (not inside .app)
 _APP_SUPPORT = os.path.expanduser("~/Library/Application Support/AI Manager")
 os.makedirs(_APP_SUPPORT, exist_ok=True)
-NOTES_FILE = os.path.join(_APP_SUPPORT, "model_notes.json")
+NOTES_FILE   = os.path.join(_APP_SUPPORT, "model_notes.json")
+ALIASES_FILE = os.path.join(_APP_SUPPORT, "model_aliases.json")
 
+
+# ── Persistence ────────────────────────────────────────────────────────────────
 
 def load_notes() -> dict:
     try:
@@ -37,6 +42,32 @@ def load_notes() -> dict:
 def save_notes(notes: dict):
     with open(NOTES_FILE, "w") as f:
         json.dump(notes, f, ensure_ascii=False, indent=2)
+
+
+def load_aliases() -> dict:
+    try:
+        with open(ALIASES_FILE) as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+
+def save_aliases(aliases: dict):
+    with open(ALIASES_FILE, "w") as f:
+        json.dump(aliases, f, ensure_ascii=False, indent=2)
+
+
+# ── In-memory log ──────────────────────────────────────────────────────────────
+
+_log_buffer: deque = deque(maxlen=200)
+
+
+def log_event(level: str, msg: str):
+    _log_buffer.append({
+        "ts":    datetime.datetime.now().strftime("%H:%M:%S"),
+        "level": level,   # "info" | "ok" | "warn" | "error"
+        "msg":   msg,
+    })
 
 
 _processes: dict[str, subprocess.Popen] = {}
@@ -120,41 +151,28 @@ def app_running(process_name: str) -> bool:
         return False
 
 
-# ── Routes ─────────────────────────────────────────────────────────────────────
+# ── Service start / stop helpers ───────────────────────────────────────────────
 
-@app.route("/")
-def index():
-    return render_template("index.html")
-
-
-@app.route("/api/status")
-def api_status():
-    result = {}
-    for sid, svc in SERVICES.items():
-        running = service_running(svc)
-        result[sid] = {
-            "name": svc["name"],
-            "description": svc["description"],
-            "icon": svc["icon"],
-            "running": running,
-            "open_url": svc.get("open_url"),
-            "cli_cmd": svc.get("cli_cmd"),
-        }
-    return jsonify(result)
+def _stop_sync(sid: str, svc: dict):
+    """Stop a service synchronously (does not wait for port to close)."""
+    if svc.get("docker_container"):
+        subprocess.run(["docker", "stop", svc["docker_container"]], capture_output=True, timeout=20)
+    else:
+        kill_port(svc["port"])
+    if sid in _processes:
+        try:
+            _processes[sid].terminate()
+        except Exception:
+            pass
+        _processes.pop(sid, None)
 
 
-@app.route("/api/services/<sid>/start", methods=["POST"])
-def start_service(sid: str):
-    if sid not in SERVICES:
-        return jsonify({"error": "Unknown service"}), 404
-
-    svc = SERVICES[sid]
-    if service_running(svc):
-        return jsonify({"ok": True, "msg": "Already running"})
-
+def _start_async(sid: str, svc: dict) -> str | None:
+    """Start a service, spinning up background threads for long-running operations.
+    Returns an error string on immediate failure, or None if started (or starting)."""
     cmd = svc.get("start_cmd")
 
-    # ── Docker-container services (openosint, etc.) ────────────────────────────
+    # Docker-container services (openosint, etc.)
     if cmd is None and svc.get("docker_container") and sid != "open-webui":
         container = svc["docker_container"]
         def _start_container(c=container):
@@ -165,10 +183,12 @@ def start_service(sid: str):
                     if docker_daemon_running():
                         break
                 else:
+                    log_event("error", f"Docker did not start for {svc['name']}")
                     return
             subprocess.run(["docker", "start", c], capture_output=True)
+            log_event("ok", f"{svc['name']} started (Docker)")
         threading.Thread(target=_start_container, daemon=True).start()
-        return jsonify({"ok": True})
+        return None
 
     if sid == "open-webui" and cmd is None:
         method = detect_open_webui_method()
@@ -176,12 +196,13 @@ def start_service(sid: str):
             def _start_webui_docker():
                 if not docker_daemon_running():
                     subprocess.Popen(["open", "-a", "Docker"])
-                    for _ in range(30):          # wait up to 60 s
+                    for _ in range(30):
                         time.sleep(2)
                         if docker_daemon_running():
                             break
                     else:
-                        return                   # Docker never came up
+                        log_event("error", "Docker did not start for Open WebUI")
+                        return
                 r = subprocess.run(
                     ["docker", "ps", "-a", "--filter", "name=^open-webui$", "--format", "{{.Names}}"],
                     capture_output=True, text=True,
@@ -198,52 +219,104 @@ def start_service(sid: str):
                         "ghcr.io/open-webui/open-webui:main",
                     ]
                 subprocess.run(docker_cmd, capture_output=True)
-
+                log_event("ok", "Open WebUI started (Docker)")
             threading.Thread(target=_start_webui_docker, daemon=True).start()
-            return jsonify({"ok": True})
+            return None
         elif method == "pip":
             cmd = ["open-webui", "serve"]
         else:
-            return jsonify({"error": "Open WebUI is not installed (neither Docker nor pip)"}), 500
+            return "Open WebUI is not installed (neither Docker nor pip)"
 
-    try:
-        proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
-        _processes[sid] = proc
-        return jsonify({"ok": True})
-    except FileNotFoundError as exc:
-        return jsonify({"error": f"Command not found: {exc}"}), 500
-    except Exception as exc:
-        return jsonify({"error": str(exc)}), 500
+    if cmd:
+        try:
+            proc = subprocess.Popen(
+                cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True
+            )
+            _processes[sid] = proc
+            log_event("ok", f"{svc['name']} started")
+            return None
+        except FileNotFoundError as exc:
+            return f"Command not found: {exc}"
+        except Exception as exc:
+            return str(exc)
+
+    return "No start command configured"
+
+
+# ── Routes ─────────────────────────────────────────────────────────────────────
+
+@app.route("/")
+def index():
+    return render_template("index.html")
+
+
+@app.route("/api/status")
+def api_status():
+    result = {}
+    for sid, svc in SERVICES.items():
+        running = service_running(svc)
+        result[sid] = {
+            "name":        svc["name"],
+            "description": svc["description"],
+            "icon":        svc["icon"],
+            "running":     running,
+            "open_url":    svc.get("open_url"),
+            "cli_cmd":     svc.get("cli_cmd"),
+        }
+    return jsonify(result)
+
+
+@app.route("/api/services/<sid>/start", methods=["POST"])
+def start_service(sid: str):
+    if sid not in SERVICES:
+        return jsonify({"error": "Unknown service"}), 404
+    svc = SERVICES[sid]
+    if service_running(svc):
+        return jsonify({"ok": True, "msg": "Already running"})
+    log_event("info", f"Starting {svc['name']}")
+    err = _start_async(sid, svc)
+    if err:
+        log_event("error", f"Failed to start {svc['name']}: {err}")
+        return jsonify({"error": err}), 500
+    return jsonify({"ok": True})
 
 
 @app.route("/api/services/<sid>/stop", methods=["POST"])
 def stop_service(sid: str):
     if sid not in SERVICES:
         return jsonify({"error": "Unknown service"}), 404
-
     svc = SERVICES[sid]
-
-    # Docker-managed container services
-    if svc.get("docker_container"):
-        container = svc["docker_container"]
-        try:
-            subprocess.run(["docker", "stop", container], capture_output=True, timeout=20)
-            _processes.pop(sid, None)
-            return jsonify({"ok": True})
-        except Exception as exc:
-            return jsonify({"error": str(exc)}), 500
-
-    killed = kill_port(svc["port"])
-    if sid in _processes:
-        try:
-            _processes[sid].terminate()
-        except Exception:
-            pass
-        _processes.pop(sid, None)
-
-    if killed:
+    log_event("info", f"Stopping {svc['name']}")
+    try:
+        _stop_sync(sid, svc)
+        log_event("ok", f"{svc['name']} stopped")
         return jsonify({"ok": True})
-    return jsonify({"ok": False, "msg": "No process found on that port"})
+    except Exception as exc:
+        log_event("error", f"Stop failed for {svc['name']}: {exc}")
+        return jsonify({"error": str(exc)}), 500
+
+
+@app.route("/api/services/<sid>/restart", methods=["POST"])
+def restart_service(sid: str):
+    if sid not in SERVICES:
+        return jsonify({"error": "Unknown service"}), 404
+    svc = SERVICES[sid]
+    log_event("info", f"Restarting {svc['name']}")
+
+    def _do_restart():
+        _stop_sync(sid, svc)
+        # Wait until the service actually stops (max 10 s)
+        for _ in range(20):
+            time.sleep(0.5)
+            if not service_running(svc):
+                break
+        time.sleep(0.3)
+        err = _start_async(sid, svc)
+        if err:
+            log_event("error", f"Restart failed for {svc['name']}: {err}")
+
+    threading.Thread(target=_do_restart, daemon=True).start()
+    return jsonify({"ok": True})
 
 
 @app.route("/api/services/<sid>/terminal", methods=["POST"])
@@ -270,6 +343,20 @@ def open_terminal(sid: str):
         return jsonify({"error": str(exc)}), 500
 
 
+# ── Logs ───────────────────────────────────────────────────────────────────────
+
+@app.route("/api/logs")
+def api_logs():
+    n = min(int(request.args.get("n", 100)), 200)
+    return jsonify(list(_log_buffer)[-n:])
+
+
+@app.route("/api/logs", methods=["DELETE"])
+def clear_logs():
+    _log_buffer.clear()
+    return jsonify({"ok": True})
+
+
 # ── Models ─────────────────────────────────────────────────────────────────────
 
 @app.route("/api/models")
@@ -287,10 +374,10 @@ def api_models():
             name = parts[0]
             id_ = parts[1] if len(parts) > 1 else ""
             if len(parts) >= 4 and parts[3] in ("GB", "MB", "KB", "B"):
-                size = parts[2] + " " + parts[3]
+                size     = parts[2] + " " + parts[3]
                 modified = " ".join(parts[4:])
             else:
-                size = parts[2] if len(parts) > 2 else ""
+                size     = parts[2] if len(parts) > 2 else ""
                 modified = " ".join(parts[3:]) if len(parts) > 3 else ""
             models.append({"name": name, "id": id_, "size": size, "modified": modified})
         return jsonify({"models": models})
@@ -318,6 +405,24 @@ def set_model_note(name: str):
     return jsonify({"ok": True})
 
 
+@app.route("/api/models/aliases")
+def api_model_aliases():
+    return jsonify(load_aliases())
+
+
+@app.route("/api/models/<path:name>/alias", methods=["POST"])
+def set_model_alias(name: str):
+    body = request.get_json(silent=True) or {}
+    alias = body.get("alias", "").strip()
+    aliases = load_aliases()
+    if alias:
+        aliases[name] = alias
+    else:
+        aliases.pop(name, None)
+    save_aliases(aliases)
+    return jsonify({"ok": True})
+
+
 @app.route("/api/models/running")
 def api_models_running():
     try:
@@ -334,7 +439,7 @@ def api_models_running():
 def load_model(name: str):
     if not port_open(11434):
         return jsonify({"error": "ollama_not_running"}), 503
-
+    log_event("info", f"Loading model: {name}")
     _model_ops[name] = {"status": "running", "action": "load"}
 
     def worker():
@@ -349,8 +454,10 @@ def load_model(name: str):
             with urllib.request.urlopen(req, timeout=120) as resp:
                 resp.read()
             _model_ops[name] = {"status": "done", "action": "load"}
+            log_event("ok", f"Model loaded: {name}")
         except Exception as exc:
             _model_ops[name] = {"status": "error", "action": "load", "error": str(exc)}
+            log_event("error", f"Failed to load model {name}: {exc}")
 
     threading.Thread(target=worker, daemon=True).start()
     return jsonify({"ok": True})
@@ -358,6 +465,7 @@ def load_model(name: str):
 
 @app.route("/api/models/<path:name>/unload", methods=["POST"])
 def unload_model(name: str):
+    log_event("info", f"Unloading model: {name}")
     _model_ops[name] = {"status": "running", "action": "unload"}
 
     def worker():
@@ -382,8 +490,10 @@ def unload_model(name: str):
                 except Exception:
                     break
             _model_ops[name] = {"status": "done", "action": "unload"}
+            log_event("ok", f"Model unloaded: {name}")
         except Exception as exc:
             _model_ops[name] = {"status": "error", "action": "unload", "error": str(exc)}
+            log_event("error", f"Failed to unload model {name}: {exc}")
 
     threading.Thread(target=worker, daemon=True).start()
     return jsonify({"ok": True})
@@ -404,6 +514,7 @@ def pull_model():
     if name in _pull_progress and _pull_progress[name].get("status") == "pulling":
         return jsonify({"ok": True, "msg": "Already downloading"})
 
+    log_event("info", f"Pulling model: {name}")
     _pull_progress[name] = {"status": "pulling", "lines": [], "pct": 0}
 
     def worker():
@@ -428,8 +539,13 @@ def pull_model():
             proc.wait()
             _pull_progress[name]["status"] = "done" if proc.returncode == 0 else "error"
             _pull_progress[name]["pct"] = 100 if proc.returncode == 0 else _pull_progress[name]["pct"]
+            if proc.returncode == 0:
+                log_event("ok", f"Model downloaded: {name}")
+            else:
+                log_event("error", f"Model download failed: {name}")
         except Exception as exc:
             _pull_progress[name] = {"status": "error", "lines": [str(exc)], "pct": 0}
+            log_event("error", f"Pull error for {name}: {exc}")
 
     threading.Thread(target=worker, daemon=True).start()
     return jsonify({"ok": True})
@@ -442,12 +558,25 @@ def pull_status(name: str):
 
 @app.route("/api/models/<path:name>", methods=["DELETE"])
 def delete_model(name: str):
+    log_event("info", f"Deleting model: {name}")
     try:
         r = subprocess.run(["ollama", "rm", name], capture_output=True, text=True, timeout=30)
         if r.returncode == 0:
+            # Clean up alias and note for the deleted model
+            aliases = load_aliases()
+            if name in aliases:
+                aliases.pop(name)
+                save_aliases(aliases)
+            notes = load_notes()
+            if name in notes:
+                notes.pop(name)
+                save_notes(notes)
+            log_event("ok", f"Model deleted: {name}")
             return jsonify({"ok": True})
+        log_event("error", f"Delete failed for {name}: {r.stderr.strip()}")
         return jsonify({"error": r.stderr.strip()}), 500
     except Exception as exc:
+        log_event("error", f"Delete error for {name}: {exc}")
         return jsonify({"error": str(exc)}), 500
 
 
@@ -457,8 +586,8 @@ def delete_model(name: str):
 def api_apps_status():
     return jsonify({
         aid: {
-            "name": a["name"],
-            "icon": a["icon"],
+            "name":    a["name"],
+            "icon":    a["icon"],
             "running": app_running(a["process"]),
         }
         for aid, a in APPS.items()

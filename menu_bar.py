@@ -22,8 +22,16 @@ PLIST_PATH = os.path.expanduser("~/Library/LaunchAgents/com.benjaminpavelka.aima
 
 
 class AIManagerMenuBar(rumps.App):
-    def __init__(self):
+    def __init__(self, flask_ok: bool = True):
         super().__init__("AI Manager", title="🤖", quit_button=None)
+
+        if not flask_ok:
+            rumps.notification(
+                title="AI Manager – startup error",
+                subtitle="",
+                message="Internal server failed to start. Please restart the app.",
+                sound=True,
+            )
 
         self._prev_states: dict[str, bool | None] = {sid: None for sid in SERVICES}
         self._service_menu_items: dict[str, rumps.MenuItem] = {}
@@ -60,8 +68,9 @@ class AIManagerMenuBar(rumps.App):
                     callback=lambda _, c=svc["cli_cmd"]: self._open_terminal(c),
                 ))
                 parent.add(None)
-            parent.add(rumps.MenuItem("  ▶  Start", callback=self._make_action(sid, "start")))
-            parent.add(rumps.MenuItem("  ■  Stop",  callback=self._make_action(sid, "stop")))
+            parent.add(rumps.MenuItem("  ▶  Start",   callback=self._make_action(sid, "start")))
+            parent.add(rumps.MenuItem("  ■  Stop",    callback=self._make_action(sid, "stop")))
+            parent.add(rumps.MenuItem("  ↺  Restart", callback=self._make_action(sid, "restart")))
             self._service_menu_items[sid] = parent
             service_items.append(parent)
 
@@ -82,7 +91,12 @@ class AIManagerMenuBar(rumps.App):
         )
         self._login_item.state = self._login_item_enabled()
 
-        about_item = rumps.MenuItem(f"AI Manager  v{VERSION}", callback=None)
+        about_item = rumps.MenuItem(
+            f"AI Manager  v{VERSION}",
+            callback=lambda _: webbrowser.open(
+                "https://github.com/BenjaminPavelka/Ai_Manager_Claud_APP/releases"
+            ),
+        )
         quit_item  = rumps.MenuItem("Quit", callback=lambda _: rumps.quit_application())
 
         self.menu = [
