@@ -113,6 +113,19 @@ def docker_container_running(name: str) -> bool:
         return False
 
 
+def _find_docker_container(name: str) -> str | None:
+    """Return the actual container name matching `name` (checks stopped containers too)."""
+    try:
+        r = subprocess.run(
+            ["docker", "ps", "-a", "--filter", f"name={name}", "--format", "{{.Names}}"],
+            capture_output=True, text=True, timeout=4,
+        )
+        names = [n.strip() for n in r.stdout.splitlines() if n.strip()]
+        return names[0] if names else None
+    except Exception:
+        return None
+
+
 def service_running(svc: dict) -> bool:
     if svc.get("docker_container"):
         return docker_container_running(svc["docker_container"])
@@ -157,7 +170,8 @@ def app_running(process_name: str) -> bool:
 def _stop_sync(sid: str, svc: dict):
     """Stop a service synchronously (does not wait for port to close)."""
     if svc.get("docker_container"):
-        subprocess.run(["docker", "stop", svc["docker_container"]], capture_output=True, timeout=20)
+        actual = _find_docker_container(svc["docker_container"]) or svc["docker_container"]
+        subprocess.run(["docker", "stop", actual], capture_output=True, timeout=20)
     else:
         kill_port(svc["port"])
     if sid in _processes:
@@ -229,8 +243,15 @@ def _start_async(sid: str, svc: dict) -> str | None:
                 else:
                     log_event("error", f"Docker did not start for {svc['name']}")
                     return
-            subprocess.run(["docker", "start", c], capture_output=True)
-            log_event("ok", f"{svc['name']} started (Docker)")
+            actual = _find_docker_container(c)
+            if not actual:
+                log_event("error", f"{svc['name']}: no Docker container matching '{c}' — create it first")
+                return
+            r = subprocess.run(["docker", "start", actual], capture_output=True, text=True)
+            if r.returncode != 0:
+                log_event("error", f"{svc['name']} docker start failed: {(r.stderr or r.stdout).strip()}")
+                return
+            log_event("ok", f"{svc['name']} started (Docker: {actual})")
         threading.Thread(target=_start_container, daemon=True).start()
         return None
 
