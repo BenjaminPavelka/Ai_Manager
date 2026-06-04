@@ -399,7 +399,13 @@
 <div class="main">
 
   <!-- Services -->
-  <div class="section-label"><i class="bi bi-server"></i> Services</div>
+  <div class="section-label" style="justify-content:space-between">
+    <span><i class="bi bi-server"></i> Services</span>
+    <button class="btn btn-stop btn-sm" id="stop-all-btn" onclick="stopAllServices(this)"
+            style="font-size:.72rem;padding:.2rem .65rem;text-transform:none;letter-spacing:0;font-weight:600">
+      <i class="bi bi-stop-circle me-1"></i>Stop All
+    </button>
+  </div>
   <div class="row g-3 mb-4" id="services-grid">
     <div class="col-12 text-center py-5 text-muted small">
       <span class="spinner-border spinner-border-sm me-2"></span>Loading…
@@ -518,6 +524,27 @@
   </div>
 </div>
 
+<!-- ── Terminal – service not running modal ──────────────────────────────────── -->
+<div class="modal fade" id="terminalStartModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-exclamation-circle me-2 text-warning"></i>Service is not running</h5>
+      </div>
+      <div class="modal-body" style="font-size:.85rem;color:var(--muted);">
+        <strong id="terminal-start-svc-name" class="text-white"></strong>
+        is not running. Start it first?
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-primary btn-sm" id="terminal-start-confirm-btn">
+          <i class="bi bi-play-circle me-1"></i>Start &amp; Open Terminal
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ── Confirm delete modal ──────────────────────────────────────────────────── -->
 <div class="modal fade" id="deleteModal" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered modal-sm">
@@ -546,8 +573,25 @@
 let pullPoller = null;
 let currentPull = null;
 let pendingModelLoad = null;
+let pendingTerminalService = null;
 const pullModal   = () => bootstrap.Modal.getOrCreateInstance(document.getElementById("pullModal"));
 const deleteModal = () => bootstrap.Modal.getOrCreateInstance(document.getElementById("deleteModal"));
+
+// Terminal-start confirm handler
+document.getElementById("terminal-start-confirm-btn").addEventListener("click", async () => {
+  const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById("terminalStartModal"));
+  modal.hide();
+  if (!pendingTerminalService) return;
+  const { id, btn } = pendingTerminalService;
+  pendingTerminalService = null;
+  const r = await apiFetch(`/api/services/${id}/start`, "POST");
+  if (r.error) { toast(r.error, true); return; }
+  toast("Starting service…");
+  await sleep(3000);
+  await refreshStatus();
+  const r2 = await apiFetch(`/api/services/${id}/terminal`, "POST");
+  if (r2 && r2.error) toast(r2.error, true);
+});
 
 // Start-Ollama confirm handler
 document.getElementById("start-ollama-confirm-btn").addEventListener("click", async () => {
@@ -662,7 +706,8 @@ function renderServices(svcs) {
     const termBtn = s.cli_cmd ? `
       <button class="btn btn-outline-secondary" title="Open Terminal"
               onclick="openTerminal('${id}', this)"
-              ${!s.running ? "disabled" : ""}>
+              data-running="${s.running}"
+              data-svc-name="${escHtml(s.name)}">
         <i class="bi bi-terminal"></i>
       </button>` : "";
 
@@ -714,6 +759,16 @@ async function svcAction(id, action, btn) {
 }
 
 async function openTerminal(id, btn) {
+  const running = btn.dataset.running === 'true';
+  if (!running) {
+    pendingTerminalService = { id, btn };
+    document.getElementById("terminal-start-svc-name").textContent =
+      btn.dataset.svcName || id;
+    bootstrap.Modal.getOrCreateInstance(
+      document.getElementById("terminalStartModal")
+    ).show();
+    return;
+  }
   btn.disabled = true;
   try {
     const r = await apiFetch(`/api/services/${id}/terminal`, "POST");
@@ -722,6 +777,22 @@ async function openTerminal(id, btn) {
     toast("Error: " + e.message, true);
   }
   setTimeout(() => { btn.disabled = false; }, 1000);
+}
+
+async function stopAllServices(btn) {
+  btn.disabled = true;
+  btn.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span>Stopping…`;
+  try {
+    const r = await apiFetch("/api/services/stop-all", "POST");
+    if (r.error) toast(r.error, true);
+    else toast("Stopping all services…");
+    await sleep(3500);
+    await refreshStatus();
+  } catch (e) {
+    toast("Error: " + e.message, true);
+  }
+  btn.disabled = false;
+  btn.innerHTML = `<i class="bi bi-stop-circle me-1"></i>Stop All`;
 }
 
 // ── Models ─────────────────────────────────────────────────────────────────────

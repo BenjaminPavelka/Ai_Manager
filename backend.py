@@ -7,6 +7,7 @@ import sys
 import time
 import json
 import datetime
+import urllib.request
 from collections import deque
 
 from services_config import SERVICES, APPS
@@ -175,7 +176,50 @@ def _start_async(sid: str, svc: dict) -> str | None:
     # Docker-container services (openosint, etc.)
     if cmd is None and svc.get("docker_container") and sid != "open-webui":
         container = svc["docker_container"]
-        def _start_container(c=container):
+        requires = svc.get("requires", [])
+        auto_load_model = svc.get("auto_load_model")
+
+        def _start_container(c=container, reqs=requires, model=auto_load_model):
+            # Start required services first and wait for them
+            for req_sid in reqs:
+                req_svc = SERVICES.get(req_sid)
+                if not req_svc:
+                    continue
+                if not service_running(req_svc):
+                    log_event("info", f"Starting {req_svc['name']} (required by {svc['name']})")
+                    err = _start_async(req_sid, req_svc)
+                    if err:
+                        log_event("error", f"Failed to start {req_svc['name']}: {err}")
+                        return
+                    for _ in range(30):
+                        time.sleep(2)
+                        if service_running(req_svc):
+                            break
+                    else:
+                        log_event("error", f"{req_svc['name']} did not start in time for {svc['name']}")
+                        return
+
+            # Trigger model load in background (non-blocking)
+            if model:
+                log_event("info", f"Loading model {model}")
+                _model_ops[model] = {"status": "running", "action": "load"}
+                def _load_model(m=model):
+                    try:
+                        payload = json.dumps({"model": m, "keep_alive": -1, "prompt": ""}).encode()
+                        req = urllib.request.Request(
+                            "http://localhost:11434/api/generate",
+                            data=payload, method="POST",
+                            headers={"Content-Type": "application/json"},
+                        )
+                        with urllib.request.urlopen(req, timeout=300) as resp:
+                            resp.read()
+                        _model_ops[m] = {"status": "done", "action": "load"}
+                        log_event("ok", f"Model loaded: {m}")
+                    except Exception as exc:
+                        _model_ops[m] = {"status": "error", "action": "load", "error": str(exc)}
+                        log_event("error", f"Failed to load model {m}: {exc}")
+                threading.Thread(target=_load_model, daemon=True).start()
+
             if not docker_daemon_running():
                 subprocess.Popen(["open", "-a", "Docker"])
                 for _ in range(30):
@@ -316,6 +360,46 @@ def restart_service(sid: str):
             log_event("error", f"Restart failed for {svc['name']}: {err}")
 
     threading.Thread(target=_do_restart, daemon=True).start()
+    return jsonify({"ok": True})
+
+
+@app.route("/api/services/stop-all", methods=["POST"])
+def stop_all_services():
+    def _worker():
+        # Unload all loaded models first
+        try:
+            with urllib.request.urlopen("http://localhost:11434/api/ps", timeout=3) as resp:
+                ps = json.loads(resp.read())
+            for m in ps.get("models", []):
+                name = m["name"]
+                try:
+                    payload = json.dumps({"model": name, "keep_alive": 0, "prompt": ""}).encode()
+                    req = urllib.request.Request(
+                        "http://localhost:11434/api/generate",
+                        data=payload, method="POST",
+                        headers={"Content-Type": "application/json"},
+                    )
+                    with urllib.request.urlopen(req, timeout=30) as r:
+                        r.read()
+                    log_event("ok", f"Model unloaded: {name}")
+                except Exception:
+                    pass
+        except Exception:
+            pass
+
+        # Stop services — ollama last so other services can shut down cleanly
+        order = [sid for sid in SERVICES if sid != "ollama"] + ["ollama"]
+        for sid in order:
+            svc = SERVICES[sid]
+            if service_running(svc):
+                try:
+                    _stop_sync(sid, svc)
+                    log_event("ok", f"{svc['name']} stopped")
+                except Exception as exc:
+                    log_event("error", f"Stop failed for {svc['name']}: {exc}")
+
+    log_event("info", "Stopping all services")
+    threading.Thread(target=_worker, daemon=True).start()
     return jsonify({"ok": True})
 
 

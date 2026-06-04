@@ -29,6 +29,8 @@ SERVICES = {
         "docker_container": "openosint",
         "start_cmd": None,
         "open_url": None,
+        "requires": ["ollama"],
+        "auto_load_model": "qwen3.6:35b",
         "cli_cmd": (
             "docker exec -it"
             " $(docker ps --filter name=openosint --format '{{.Names}}' | head -1)"

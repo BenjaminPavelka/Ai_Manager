@@ -74,6 +74,11 @@ class AIManagerMenuBar(rumps.App):
             self._service_menu_items[sid] = parent
             service_items.append(parent)
 
+        self._stop_all_item = rumps.MenuItem(
+            "  ■  Stop All Services",
+            callback=self._stop_all_services,
+        )
+
         self._models_parent = rumps.MenuItem("💾  Models in Memory (0)")
 
         app_items = []
@@ -103,6 +108,8 @@ class AIManagerMenuBar(rumps.App):
             open_dashboard,
             None,
             *service_items,
+            None,
+            self._stop_all_item,
             None,
             self._models_parent,
             None,
@@ -153,6 +160,13 @@ class AIManagerMenuBar(rumps.App):
         sender.state = not enabled
 
     # ── Helpers ────────────────────────────────────────────────────────────────
+
+    def _stop_all_services(self, _):
+        threading.Thread(
+            target=self._call_api,
+            args=("/api/services/stop-all",),
+            daemon=True,
+        ).start()
 
     def _make_action(self, sid: str, action: str):
         def callback(_):
