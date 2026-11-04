@@ -5,7 +5,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [Unreleased]
+## [0.4.5] – 2026-11-04
 
 ### Changed
 - New app icon, also shown at the top of the README
