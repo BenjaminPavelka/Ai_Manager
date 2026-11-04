@@ -1,4 +1,8 @@
-# 🤖 AI Manager
+<p align="center">
+  <img src="resources/logo.png" alt="AI Manager icon" width="128" height="128">
+</p>
+
+# AI Manager
 
 [![Build & Release](https://github.com/BenjaminPavelka/Ai_Manager/actions/workflows/release.yml/badge.svg)](https://github.com/BenjaminPavelka/Ai_Manager/actions/workflows/release.yml)
 [![Latest Release](https://img.shields.io/github/v/release/BenjaminPavelka/Ai_Manager)](https://github.com/BenjaminPavelka/Ai_Manager/releases/latest)
@@ -60,7 +64,7 @@ services_config.py   – service and app configuration (single source of truth)
 version.py           – version number
 templates/
   index.html         – web dashboard (Bootstrap 5)
-resources/           – AppIcon.icns for build
+resources/           – AppIcon.icns for build, logo.png for README
 .github/workflows/
   release.yml      – GitHub Actions: build + GitHub Release on tag push
 ```
