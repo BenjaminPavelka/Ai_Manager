@@ -10,7 +10,7 @@ import datetime
 import urllib.request
 from collections import deque
 
-from services_config import SERVICES, APPS
+from services_config import SERVICES, APPS, PORT
 
 # When launched as .app from Finder the PATH is minimal — add common tool locations
 os.environ["PATH"] = "/opt/homebrew/bin:/usr/local/bin:" + os.environ.get("PATH", "")
@@ -22,6 +22,19 @@ else:
     _BASE = os.path.dirname(os.path.abspath(__file__))
 
 app = Flask(__name__, template_folder=os.path.join(_BASE, "templates"))
+
+# The API has no login, so only requests from this app's own origin may use it.
+_ALLOWED_HOSTS = {f"localhost:{PORT}", f"127.0.0.1:{PORT}"}
+_ALLOWED_ORIGINS = {f"http://{host}" for host in _ALLOWED_HOSTS}
+
+
+@app.before_request
+def reject_foreign_requests():
+    """Block other websites (CSRF) and foreign Host headers (DNS rebinding)."""
+    origin = request.headers.get("Origin")
+    if request.host not in _ALLOWED_HOSTS or (origin and origin not in _ALLOWED_ORIGINS):
+        return jsonify({"error": "Forbidden"}), 403
+
 
 # Persist data in ~/Library/Application Support/AI Manager (not inside .app)
 _APP_SUPPORT = os.path.expanduser("~/Library/Application Support/AI Manager")

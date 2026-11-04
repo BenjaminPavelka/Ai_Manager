@@ -1,8 +1,8 @@
 # 🤖 AI Manager
 
-[![Build & Release](https://github.com/BenjaminPavelka/Ai_Manager_Claud_APP/actions/workflows/release.yml/badge.svg)](https://github.com/BenjaminPavelka/Ai_Manager_Claud_APP/actions/workflows/release.yml)
-[![Latest Release](https://img.shields.io/github/v/release/BenjaminPavelka/Ai_Manager_Claud_APP)](https://github.com/BenjaminPavelka/Ai_Manager_Claud_APP/releases/latest)
-[![macOS](https://img.shields.io/badge/macOS-12%2B-blue?logo=apple)](https://github.com/BenjaminPavelka/Ai_Manager_Claud_APP/releases/latest)
+[![Build & Release](https://github.com/BenjaminPavelka/Ai_Manager/actions/workflows/release.yml/badge.svg)](https://github.com/BenjaminPavelka/Ai_Manager/actions/workflows/release.yml)
+[![Latest Release](https://img.shields.io/github/v/release/BenjaminPavelka/Ai_Manager)](https://github.com/BenjaminPavelka/Ai_Manager/releases/latest)
+[![macOS](https://img.shields.io/badge/macOS-12%2B-blue?logo=apple)](https://github.com/BenjaminPavelka/Ai_Manager/releases/latest)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 > ⚠️ **Disclaimer:** This app was built by a complete amateur with the generous help of Claude AI.
@@ -24,7 +24,7 @@ Lives in the menu bar — always at hand, no unnecessary windows.
 
 ## ⬇️ Download
 
-**[→ Download latest release](https://github.com/BenjaminPavelka/Ai_Manager_Claud_APP/releases/latest)**
+**[→ Download latest release](https://github.com/BenjaminPavelka/Ai_Manager/releases/latest)**
 
 1. Download `AI.Manager.zip` from Releases
 2. Unzip and drag `AI Manager.app` to `/Applications`
@@ -84,8 +84,8 @@ resources/           – AppIcon.icns for build
 ### Install
 
 ```bash
-git clone https://github.com/BenjaminPavelka/Ai_Manager_Claud_APP.git
-cd Ai_Manager_Claud_APP
+git clone https://github.com/BenjaminPavelka/Ai_Manager.git
+cd Ai_Manager
 ./install.sh
 ```
 

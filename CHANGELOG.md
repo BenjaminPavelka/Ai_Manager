@@ -5,6 +5,20 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [0.4.4] – 2026-11-04
+
+### Security
+- The local API now rejects requests from other websites and foreign `Host` headers, so a page open in a browser can no longer control services or delete models
+
+### Fixed
+- Menu bar version label, which showed 0.4.2 in the 0.4.3 release
+- GitHub links now use the current repository name
+
+### Removed
+- Unused LaunchAgent template containing local paths
+
+---
+
 ## [0.4.0] – 2026-06-02
 
 ### Added
