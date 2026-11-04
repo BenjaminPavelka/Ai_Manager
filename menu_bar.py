@@ -99,7 +99,7 @@ class AIManagerMenuBar(rumps.App):
         about_item = rumps.MenuItem(
             f"AI Manager  v{VERSION}",
             callback=lambda _: webbrowser.open(
-                "https://github.com/BenjaminPavelka/Ai_Manager_Claud_APP/releases"
+                "https://github.com/BenjaminPavelka/Ai_Manager/releases"
             ),
         )
         quit_item  = rumps.MenuItem("Quit", callback=lambda _: rumps.quit_application())
